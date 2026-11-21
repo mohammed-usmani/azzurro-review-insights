@@ -67,6 +67,13 @@ export interface Health {
   }[];
 }
 
+export interface ReviewCounts { all: number; urgent: number; no_reply: number; negative: number; translated: number; no_reply_oldest: string | null }
+
+export interface Run {
+  id: number; property: string; started_at: number; finished_at: number | null; status: string;
+  pages: number; seen: number; new: number; rejected: number; reported_total: number | null; error: string | null;
+}
+
 export interface Coverage {
   reviews: number; with_text: number; non_english_with_text: number; non_english_pct: number | null;
   languages: { lang: string; reviews: number; with_text: number; analysed: number }[];

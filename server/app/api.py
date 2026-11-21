@@ -237,6 +237,7 @@ def reviews(
     issue_group: int | None = Query(None, description="id from /api/issues: reviews mentioning that problem"),
     replied: bool | None = Query(None, description="false = the hotel has not replied yet"),
     has_text: bool | None = Query(None, description="true = only reviews with a written title or text"),
+    translated: bool | None = Query(None, description="true = only reviews the AI translated into English"),
     sort: Literal["newest", "oldest", "highest", "lowest"] = "newest",
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),
@@ -274,9 +275,37 @@ def reviews(
         w += f" AND r.partner_reply IS {'NOT ' if replied else ''}NULL"
     if urgent is not None:
         w += f" AND {'' if urgent else 'NOT '}EXISTS (SELECT 1 FROM review_analysis x WHERE x.review_id = r.id AND x.urgent = 1)"
+    if translated is not None:
+        w += f" AND {'' if translated else 'NOT '}{TRANSLATED_SQL}"
 
     total, items = _fetch_reviews(w, a, sort, limit, offset)
     return {"total": total, "limit": limit, "offset": offset, "items": items}
+
+
+HAS_TEXT_SQL = "(r.title IS NOT NULL OR r.positive IS NOT NULL OR r.negative IS NOT NULL)"
+TRANSLATED_SQL = ("EXISTS (SELECT 1 FROM review_analysis x WHERE x.review_id = r.id"
+                  " AND COALESCE(x.title_en, x.positive_en, x.negative_en) IS NOT NULL)")
+URGENT_SQL = "EXISTS (SELECT 1 FROM review_analysis x WHERE x.review_id = r.id AND x.urgent = 1)"
+NO_REPLY_SQL = f"({SENTIMENT_SQL['negative']} AND r.partner_reply IS NULL AND {HAS_TEXT_SQL})"
+
+
+@app.get("/api/reviews/counts")
+def review_counts(props: list[str] = Props, start: date | None = From, end: date | None = To,
+                  has_text: bool = Query(True, description="false = include score-only reviews in 'all' and 'negative'")):
+    """Counts behind the review feed's quick filters, in one query. Same definitions as the /api/reviews filters."""
+    w, a = _where(props, start, end)
+    text = HAS_TEXT_SQL if has_text else "1"
+    with _conn() as conn:
+        row = conn.execute(f"""
+            SELECT SUM({text}) AS "all",
+                   SUM({URGENT_SQL}) AS urgent,
+                   SUM({NO_REPLY_SQL}) AS no_reply,
+                   SUM({SENTIMENT_SQL['negative']} AND {text}) AS negative,
+                   SUM({TRANSLATED_SQL}) AS translated,
+                   MIN(CASE WHEN {NO_REPLY_SQL} THEN r.reviewed_on END) AS no_reply_oldest
+            FROM reviews r WHERE {w}""", a).fetchone()
+    return {k: row[k] or 0 for k in ("all", "urgent", "no_reply", "negative", "translated")} | \
+        {"no_reply_oldest": row["no_reply_oldest"]}
 
 
 @app.get("/api/reviews/{review_id}")
@@ -606,6 +635,6 @@ def briefing(response: Response, props: list[str] = Props, start: date | None = 
                 "generated_at": row["generated_at"], "model": row["model"],
                 "facts": json.loads(row["facts"]), "briefing": json.loads(row["content"])}
     if not llm.enabled():
-        raise HTTPException(503, "no briefing stored; set OPENAI_API_KEY in server/.env to generate one")
+        raise HTTPException(503, "no briefing stored; set an API key in server/.env (see .env.example) to generate one")
     response.status_code = 202
     return {"status": "generating", "generating": True, "facts": facts, "briefing": None}

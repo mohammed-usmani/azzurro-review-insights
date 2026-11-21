@@ -1,41 +1,82 @@
 @import "tailwindcss";
 
-/* Harbour ink on cool paper; jacaranda for interaction. Status colours are reserved for status. */
+/* Harbour navy on cool grey paper; jacaranda for interaction. Score bands: teal / amber / terracotta.
+   Status red is kept for urgent items only. */
 :root {
-  --paper: #f6f8f7;
+  --paper: #eef1f1;
   --surface: #ffffff;
   --ink: #14212b;
   --muted: #5b6b75;
   --faint: #8a979e;
   --line: #dde3e1;
-  --accent: #6b46c1;
-  --accent-soft: #efe9fb;
+  --line-soft: #edf0ef;
+  --seg: #e4e9e8;
+  --nav: #14212b;
+  --nav-ink: #c4ced4;
+  --nav-muted: #9fb0ba;
+  --accent: #5b3aa8;
+  --accent-soft: #f4f0fb;
+  --accent-line: #e1d8f3;
   --urgent: #b42318;
   --urgent-soft: #fdecea;
-  --warn: #b54708;
-  --good: #2f7d5b;
-  --pos: #2a7f8e;   /* positive reviews */
-  --mix: #b7c2c6;   /* mixed */
-  --neg: #c0503a;   /* negative reviews */
+  --urgent-ink: #8a1c12;
+  --warn: #9a5b0a;
+  --good: #2f9e6b;
+  --pos: #2a7f8e;
+  --pos-soft: #dff0f2;
+  --pos-ink: #1b5d69;
+  --mix: #d9a441;
+  --mix-soft: #fbefd6;
+  --mix-ink: #77510c;
+  --neg: #c0503a;
+  --neg-soft: #fbe7e2;
+  --neg-ink: #9b2f1d;
+  --heat-0: #f3f5f5;
+  --heat-1: #fbe7e2;
+  --heat-2: #f4c6b9;
+  --heat-3: #e89a83;
+  --heat-4: #b4432e;
+  --heat-ink-0: #6b7a82;
+  --heat-ink: #3a1209;
+  --heat-ink-4: #ffffff;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --paper: #0f1a21;
-    --surface: #15232c;
+    --paper: #0d161c;
+    --surface: #142029;
     --ink: #e6edf0;
     --muted: #9aaab2;
     --faint: #6f8089;
     --line: #26363f;
+    --line-soft: #1d2b33;
+    --seg: #1d2b33;
+    --nav: #0a1217;
     --accent: #a58af0;
-    --accent-soft: #261e3d;
+    --accent-soft: #221b38;
+    --accent-line: #352a57;
     --urgent: #f97066;
     --urgent-soft: #3a1714;
-    --warn: #f79009;
+    --urgent-ink: #ffb4ab;
+    --warn: #f5b14c;
     --good: #47b886;
     --pos: #4fb3c4;
-    --mix: #4b5b63;
+    --pos-soft: #133238;
+    --pos-ink: #8fd6e2;
+    --mix: #e0b45a;
+    --mix-soft: #362a12;
+    --mix-ink: #f0cf8a;
     --neg: #ec7a63;
+    --neg-soft: #3a1c15;
+    --neg-ink: #f5a896;
+    --heat-0: #1a2730;
+    --heat-1: #3a1f18;
+    --heat-2: #5c2a1e;
+    --heat-3: #8a3a28;
+    --heat-4: #c0503a;
+    --heat-ink-0: #8a979e;
+    --heat-ink: #f6d9d1;
+    --heat-ink-4: #ffffff;
   }
 }
 
@@ -46,15 +87,28 @@
   --color-muted: var(--muted);
   --color-faint: var(--faint);
   --color-line: var(--line);
+  --color-line-soft: var(--line-soft);
+  --color-seg: var(--seg);
+  --color-nav: var(--nav);
+  --color-nav-ink: var(--nav-ink);
+  --color-nav-muted: var(--nav-muted);
   --color-accent: var(--accent);
   --color-accent-soft: var(--accent-soft);
+  --color-accent-line: var(--accent-line);
   --color-urgent: var(--urgent);
   --color-urgent-soft: var(--urgent-soft);
+  --color-urgent-ink: var(--urgent-ink);
   --color-warn: var(--warn);
   --color-good: var(--good);
   --color-pos: var(--pos);
+  --color-pos-soft: var(--pos-soft);
+  --color-pos-ink: var(--pos-ink);
   --color-mix: var(--mix);
+  --color-mix-soft: var(--mix-soft);
+  --color-mix-ink: var(--mix-ink);
   --color-neg: var(--neg);
+  --color-neg-soft: var(--neg-soft);
+  --color-neg-ink: var(--neg-ink);
   --font-sans: var(--font-schibsted);
 }
 
@@ -74,5 +128,5 @@ dialog::backdrop {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  * { transition: none !important; animation: none !important; }
+  * { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
 }

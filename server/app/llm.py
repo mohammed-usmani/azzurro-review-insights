@@ -7,7 +7,9 @@
 3. generate_briefing (gpt-5-mini): the weekly briefing, written from numbers computed in SQL.
    Run by background jobs; cited review ids are checked against its input.
 
-Without OPENAI_API_KEY the API still works on keyword tags and whatever was stored.
+LLM_PROVIDER picks the route: "openai" (default, OPENAI_API_KEY) or "openrouter" (OPENROUTER_API_KEY,
+the same OpenAI models through OpenRouter). Without the chosen key the API still works on keyword
+tags and whatever was stored.
 
     python -m app.llm process     # enrich + group + refresh briefings (the collector runs this)
     python -m app.llm regroup     # rebuild issue groups, e.g. after changing ISSUE_GROUP_THRESHOLD
@@ -39,8 +41,27 @@ Topic = Literal["cleanliness", "check_in", "staff", "noise", "facilities", "loca
 assert set(Topic.__args__) == {*LABELS, "other"}
 
 
+# OpenRouter serves the same OpenAI models behind an OpenAI-compatible API ("openai/<model>"),
+# so it is a drop-in second route: same prompts, same embeddings, comparable results.
+PROVIDER = os.environ.get("LLM_PROVIDER", "openai").strip().lower()
+if PROVIDER not in ("openai", "openrouter"):
+    raise ValueError(f"LLM_PROVIDER must be 'openai' or 'openrouter', not {PROVIDER!r}")
+API_KEY = os.environ.get("OPENROUTER_API_KEY" if PROVIDER == "openrouter" else "OPENAI_API_KEY")
+
+
 def enabled() -> bool:
-    return bool(os.environ.get("OPENAI_API_KEY"))
+    return bool(API_KEY)
+
+
+def _client_args() -> dict:
+    if PROVIDER == "openrouter":
+        return {"api_key": API_KEY, "base_url": "https://openrouter.ai/api/v1"}
+    return {"api_key": API_KEY}
+
+
+def _model(name: str) -> str:
+    """OpenRouter names OpenAI models "openai/<model>"; the bare name is what gets stored."""
+    return f"openai/{name}" if PROVIDER == "openrouter" and "/" not in name else name
 
 
 def _extra(model: str = MODEL) -> dict:
@@ -95,7 +116,7 @@ def _review_input(r) -> str:
 
 async def analyse_review(client: AsyncOpenAI, r) -> dict:
     resp = await client.responses.parse(
-        model=MODEL, text_format=ReviewAnalysis, **_extra(),
+        model=_model(MODEL), text_format=ReviewAnalysis, **_extra(),
         input=[{"role": "system", "content": ANALYSE_PROMPT}, {"role": "user", "content": _review_input(r)}])
     return resp.output_parsed.model_dump()
 
@@ -109,7 +130,7 @@ async def enrich_pending(limit: int | None = None, concurrency: int = 16) -> tup
         "WHERE (r.title IS NOT NULL OR r.positive IS NOT NULL OR r.negative IS NOT NULL) "
         "AND (a.review_id IS NULL OR a.prompt_version < ?) ORDER BY r.reviewed_at DESC"
         + (" LIMIT ?" if limit else ""), (PROMPT_VERSION, limit) if limit else (PROMPT_VERSION,)).fetchall()
-    client = AsyncOpenAI()
+    client = AsyncOpenAI(**_client_args())
     sem = asyncio.Semaphore(concurrency)
     done = failed = 0
 
@@ -143,10 +164,10 @@ def embed_phrases(conn) -> int:
         conn.execute("INSERT OR IGNORE INTO issue_phrases (polarity, issue) "
                      "SELECT DISTINCT polarity, issue FROM review_issues")
     rows = conn.execute("SELECT polarity, issue FROM issue_phrases WHERE embedding IS NULL").fetchall()
-    client = OpenAI()
+    client = OpenAI(**_client_args())
     for i in range(0, len(rows), 1000):
         batch = rows[i:i + 1000]
-        resp = client.embeddings.create(model=EMBED_MODEL, dimensions=EMBED_DIMS, input=[r["issue"] for r in batch])
+        resp = client.embeddings.create(model=_model(EMBED_MODEL), dimensions=EMBED_DIMS, input=[r["issue"] for r in batch])
         with conn:
             conn.executemany("UPDATE issue_phrases SET embedding = ? WHERE polarity = ? AND issue = ?",
                              [(np.asarray(d.embedding, dtype=np.float32).tobytes(), r["polarity"], r["issue"])
@@ -310,7 +331,7 @@ Rules:
 
 
 def _parse(system: str, user: str, schema: type[BaseModel]) -> BaseModel:
-    resp = OpenAI().responses.parse(model=SUMMARY_MODEL, text_format=schema, **_extra(SUMMARY_MODEL),
+    resp = OpenAI(**_client_args()).responses.parse(model=_model(SUMMARY_MODEL), text_format=schema, **_extra(SUMMARY_MODEL),
                                     input=[{"role": "system", "content": system}, {"role": "user", "content": user}])
     return resp.output_parsed
 

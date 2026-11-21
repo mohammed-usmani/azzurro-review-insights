@@ -31,28 +31,27 @@ collected from Booking.com), including the AI results. **No API key and no scrap
 
 ## What's on the dashboard
 
-The dashboard is one page for non-technical operations staff. Every view can be filtered by property
-and period (this week, last week, last 4 weeks, last 3 months, custom dates), and the filters are kept
-in the URL, so a view can be bookmarked or shared.
+Built for non-technical operations staff: the most urgent things are on the first screen, and every number
+can be clicked through to the reviews behind it. A left menu switches pages and property; the period
+(this week, last week, 4 weeks, 3 months, custom dates) sits at the top of every page, always with the
+exact dates and what they are compared with. Property, period and filters are kept in the URL, so any
+view can be bookmarked or shared.
+
+| Page | What it answers |
+|---|---|
+| **Overview** | How are we doing this week, and what needs action today? An AI summary line (full briefing with actions per team in a side panel), five key numbers (average vs last week, reviews, negative share, poor reviews without a reply, urgent), each property's average with a 12-week trend, a *Needs attention* list (urgent reviews; poor reviews without a reply, oldest first), the weekly trend and what negative reviews complain about |
+| **Reviews** | The review feed: quick filters (all, urgent, no reply yet, negative, translated), search in any language, topic and sort, with a reading pane showing the English translation (or the original), stay details, the problems the AI found and the hotel's reply |
+| **Topics and problems** | Why are guests unhappy? Insight sentences ("26% of negative reviews mentioned cleanliness, down from 33%"), a topic × property grid, and the most common specific problems with their change from the period before |
+| **Data health** | Can I trust these numbers? Collection status per property, reviews stored vs Booking.com's total, rejected records, the run log, AI and language coverage, and a button to collect now |
 
 | Requirement | Where |
 |---|---|
-| Average rating for the current week, and the comparison with the previous week | **Ratings**: this calendar week (Monday to today) vs all of last week, with the number of reviews behind each average |
-| Property-by-property breakdown | **Ratings** table, lowest average first |
-| Review feed | **Reviews**: English translations with "Show original", issue tags, the hotel's reply, search, filters and paging; any review opens in a reading panel |
-| Date and property filters | Top bar; they apply to every section |
-| Positive and negative trends | **Trends**: weekly average, and positive/mixed/negative review counts per week |
-| Topic insights ("40% of negative reviews this week mentioned cleanliness") | **What guests mention**: insight sentences, then a table of complaints vs praise per topic, compared with the previous period |
-
-Extras for the operations team:
-- **Summary:** an AI-written summary of the period, with suggested actions for each team. Every point
-  links to the reviews behind it.
-- **Needs attention:**
-  - urgent reviews (health, safety, security or legal risks);
-  - poor reviews with no hotel reply, oldest first.
-- **Most common problems:** specific problems ("kitchen dirty", "no staff on site") ranked by the
-  number of reviews, compared with the previous period. Click a problem to read its reviews.
-- **Where this data comes from:** last collection per property, and reviews stored vs the total on Booking.com.
+| Current week's average rating vs the previous week | Overview: key numbers and the properties table |
+| Property-by-property breakdown | Overview: properties table; the menu's property switcher filters every page |
+| Review feed | Reviews |
+| Date and property filters | Period switcher on every page; property switcher in the menu |
+| Positive and negative trends | Overview: weekly chart (average, or positive/mixed/negative counts) |
+| Topic insights | Overview: complaints by topic; Topics and problems |
 
 ## Running the parts separately
 
@@ -60,7 +59,7 @@ Extras for the operations team:
 cd server
 uv sync
 uv run playwright install chromium           # only needed to collect reviews
-cp .env.example .env                         # optional: OPENAI_API_KEY for AI analysis of new reviews
+cp .env.example .env                         # optional: an OpenAI or OpenRouter key (LLM_PROVIDER) for AI analysis
 uv run python -m app.db load-sample          # load the committed sample data
 uv run uvicorn app.api:app --reload          # API on http://localhost:8000, docs at /docs
 uv run pytest                                # tests
@@ -106,6 +105,10 @@ To keep it current, schedule the incremental run, e.g. hourly with cron:
 
 About 45% of the reviews that have text are not in English: French, Spanish, German, Japanese,
 Chinese and more. Keyword rules can't read them, and a manager skimming Booking.com usually doesn't either.
+
+The models are OpenAI's, called either directly (`LLM_PROVIDER=openai`, the default, with
+`OPENAI_API_KEY`) or through OpenRouter (`LLM_PROVIDER=openrouter`, with `OPENROUTER_API_KEY`).
+Both routes use the same models, prompts and embeddings, so stored results stay comparable.
 
 1. **Analysis of each review**, once, when it is collected (`python -m app.llm enrich`, which also
    runs automatically after the collector). It produces:

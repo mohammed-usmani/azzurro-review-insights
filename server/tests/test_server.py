@@ -189,3 +189,13 @@ def test_health_reports_coverage(client):
     olympic = next(p for p in body["properties"] if p["property"] == "olympic-paddington")
     assert olympic["status"] == "ok" and olympic["stored_reviews"] == 4 and olympic["reported_reviews"] == 6
     assert body["status"] == "stale"  # the other properties were never collected
+
+
+def test_review_counts_match_filters(client):
+    conn = db.connect()
+    db.save_analysis(conn, "t1", ANALYSIS, "m", 1)  # urgent, and has an English translation
+    c = client.get("/api/reviews/counts").json()
+    assert c["urgent"] == 1 and c["translated"] == 1
+    assert c["negative"] == client.get("/api/reviews", params={"sentiment": "negative", "has_text": True}).json()["total"]
+    assert c["translated"] == client.get("/api/reviews", params={"translated": True}).json()["total"]
+    assert c["no_reply"] == 2 and c["no_reply_oldest"] == "2026-11-18"   # t1, t2: negative, with text, no reply

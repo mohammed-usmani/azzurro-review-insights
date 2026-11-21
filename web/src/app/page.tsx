@@ -1,11 +1,5 @@
-import { Suspense } from "react";
-import { Dashboard } from "@/components/Dashboard";
+import { Overview } from "@/components/Overview";
 
 export default function Home() {
-  // useSearchParams (filters in the URL) needs a Suspense boundary
-  return (
-    <Suspense>
-      <Dashboard />
-    </Suspense>
-  );
+  return <Overview />;
 }
