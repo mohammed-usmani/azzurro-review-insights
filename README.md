@@ -53,6 +53,29 @@ view can be bookmarked or shared.
 | Positive and negative trends | Overview: weekly chart (average, or positive/mixed/negative counts) |
 | Topic insights | Overview: complaints by topic; Topics and problems |
 
+## Hosting
+
+One Docker image runs everything: the API, the dashboard, collection every 3 hours and AI analysis
+of new reviews. It needs one open port (3000) and one volume for the database.
+
+```bash
+cp server/.env.example server/.env   # AI key (optional) and the Webshare proxy (needed on a hosted server)
+docker build -t azzurro .
+docker run -d -p 3000:3000 --env-file server/.env -v azzurro-data:/data --restart unless-stopped azzurro
+```
+
+On first start it loads the sample data. If the last collection is more than 3 hours old, it starts
+one right away. After that it collects every 3 hours.
+
+- **Residential IP:** Booking.com blocks most datacenter IPs, so a hosted server sends the collector
+  through a Webshare residential proxy (`WEBSHARE_*` in `.env`). Each collection attempt keeps one
+  IP for all its pages and gets a new one when it retries. Without these values it connects
+  directly, which works from a home connection.
+- **No screen needed:** the collector uses a real (headed) browser, because Booking.com refuses
+  headless ones. The image provides a virtual screen for it.
+- **AI optional:** with `LLM_PROVIDER` and a key, new reviews are translated and tagged, and the
+  briefings are refreshed after each collection. Without a key, the keyword tags are used.
+
 ## Running the parts separately
 
 ```bash
@@ -77,8 +100,10 @@ uv run python -m app.collector --full        # first run / backfill: every page 
 uv run python -m app.collector --property chateau-de-venus
 ```
 
-To keep it current, schedule the incremental run, e.g. hourly with cron:
-`0 * * * * cd /path/to/server && uv run python -m app.collector`.
+While the API runs it collects automatically every 3 hours (`COLLECT_EVERY_HOURS` in `server/.env`,
+`0` turns it off), then analyses the new reviews and refreshes the briefings when an AI key is set.
+The next run is due 3 hours after the last one started, so restarting the API doesn't trigger extra runs.
+Data health shows when the next one is due, and "Collect new reviews now" starts one by hand.
 
 ## Architecture
 

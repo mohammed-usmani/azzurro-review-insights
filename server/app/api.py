@@ -12,8 +12,9 @@ import logging
 import subprocess
 import sys
 import threading
+import os
 import time
-from contextlib import closing
+from contextlib import asynccontextmanager, closing
 from datetime import date, datetime, timedelta
 from typing import Literal
 
@@ -36,7 +37,21 @@ ORDER_SQL = {
     "lowest": "r.score ASC, r.reviewed_at DESC",
 }
 
-app = FastAPI(title="Azzurro review insights")
+# Automatic collection: every COLLECT_EVERY_HOURS (default 3, 0 = off) the API starts the collector,
+# which then analyses new reviews and refreshes briefings when an AI key is set.
+COLLECT_EVERY_HOURS = float(os.environ.get("COLLECT_EVERY_HOURS", "3"))
+log = logging.getLogger("api")
+
+
+@asynccontextmanager
+async def lifespan(_app):
+    if COLLECT_EVERY_HOURS > 0:
+        threading.Thread(target=_schedule_loop, name="collect-schedule", daemon=True).start()
+        log.info("automatic collection every %g hours", COLLECT_EVERY_HOURS)
+    yield
+
+
+app = FastAPI(title="Azzurro review insights", lifespan=lifespan)
 app.add_middleware(CORSMiddleware, allow_origins=["http://localhost:3000"], allow_methods=["*"], allow_headers=["*"])
 
 # Shared query params: ?property=a&property=b, ?from=YYYY-MM-DD&to=YYYY-MM-DD
@@ -157,8 +172,12 @@ def health():
             "last_error": run.get("error") if run.get("status") == "failed" else None,
             "rejected_reviews": rejected.get(slug, 0),
         })
+    with _conn() as conn:
+        next_at = next_collection_at(conn, now)
     return {"status": worst, "reviews": sum(stored.values()), "with_text": with_text, "analysed": analysed,
-            "llm_enabled": llm.enabled(), "stale_after_hours": STALE_AFTER_HOURS, "properties": properties}
+            "llm_enabled": llm.enabled(), "stale_after_hours": STALE_AFTER_HOURS, "properties": properties,
+            "schedule": {"every_hours": COLLECT_EVERY_HOURS or None, "next_at": next_at,
+                         "running": bool(_collector and _collector.poll() is None)}}
 
 
 @app.get("/api/properties")
@@ -433,13 +452,48 @@ _collector: subprocess.Popen | None = None  # ponytail: one collector per API pr
 @app.post("/api/collect", status_code=202)
 def collect(props: list[str] = Props, full: bool = False):
     """Start the collector in the background (opens a browser window on this machine). Poll /api/runs."""
-    global _collector
     _where(props)
-    if _collector and _collector.poll() is None:
+    proc = _start_collector(props, full)
+    if not proc:
         raise HTTPException(409, "a collection is already running")
-    args = [sys.executable, "-m", "app.collector", *[x for p in props for x in ("--property", p)]]
-    _collector = subprocess.Popen(args + (["--full"] if full else []), cwd=db.SERVER_DIR)
-    return {"started": True, "pid": _collector.pid}
+    return {"started": True, "pid": proc.pid}
+
+
+_collector_lock = threading.Lock()
+
+
+def _start_collector(props: list[str] = (), full: bool = False) -> subprocess.Popen | None:
+    """Start the collector unless one is running. It analyses new reviews itself when an AI key is set."""
+    global _collector
+    with _collector_lock:
+        if _collector and _collector.poll() is None:
+            return None
+        args = [sys.executable, "-m", "app.collector", *[x for p in props for x in ("--property", p)]]
+        _collector = subprocess.Popen(args + (["--full"] if full else []), cwd=db.SERVER_DIR)
+        return _collector
+
+
+def next_collection_at(conn, now: int) -> int | None:
+    """When the schedule starts the next run: COLLECT_EVERY_HOURS after the last one started (any result,
+    so a failing site is retried on the schedule, not in a loop). None when automatic collection is off."""
+    if COLLECT_EVERY_HOURS <= 0:
+        return None
+    last = conn.execute("SELECT MAX(started_at) FROM runs").fetchone()[0]
+    return now if last is None else max(now, int(last + COLLECT_EVERY_HOURS * 3600))
+
+
+def _schedule_loop() -> None:
+    # ponytail: in-process timer, one API worker; an OS cron or a job queue if the API ever runs multi-worker
+    while True:
+        try:
+            now = int(time.time())
+            with _conn() as conn:
+                due = next_collection_at(conn, now) <= now
+            if due and _start_collector():
+                log.info("scheduled collection started")
+        except Exception:
+            log.exception("scheduled collection could not start")
+        time.sleep(60)
 
 
 @app.get("/api/coverage")
@@ -530,7 +584,6 @@ def issues(props: list[str] = Props, start: date | None = From, end: date | None
 
 # --- briefings: stored, served instantly, regenerated in the background ---------------------------
 
-log = logging.getLogger("api")
 _inflight: set[str] = set()
 _inflight_lock = threading.Lock()
 

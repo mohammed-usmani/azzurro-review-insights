@@ -28,6 +28,15 @@ export function ago(unixSeconds: number | null | undefined) {
   return `${Math.round(hours / 24)} days ago`;
 }
 
+/** "in 2 hours", "in 40 min", "now" */
+export function until(unixSeconds: number) {
+  const minutes = (unixSeconds - Date.now() / 1000) / 60;
+  if (minutes < 1) return "now";
+  if (minutes < 60) return `in ${Math.round(minutes)} min`;
+  const hours = Math.round(minutes / 60);
+  return `in ${hours} ${hours === 1 ? "hour" : "hours"}`;
+}
+
 export const band = (value: number) => (value >= 8 ? "pos" : value <= 6 ? "neg" : "mix") as "pos" | "mix" | "neg";
 
 export const SHORT_NAMES: Record<string, string> = {

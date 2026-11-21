@@ -199,3 +199,31 @@ def test_review_counts_match_filters(client):
     assert c["negative"] == client.get("/api/reviews", params={"sentiment": "negative", "has_text": True}).json()["total"]
     assert c["translated"] == client.get("/api/reviews", params={"translated": True}).json()["total"]
     assert c["no_reply"] == 2 and c["no_reply_oldest"] == "2026-11-18"   # t1, t2: negative, with text, no reply
+
+
+def test_schedule_next_collection(tmp_path, monkeypatch):
+    from app import api
+    conn = db.connect(tmp_path / "s.db")
+    monkeypatch.setattr(api, "COLLECT_EVERY_HOURS", 3)
+    assert api.next_collection_at(conn, 1_000_000) == 1_000_000            # never collected: due now
+    db.start_run(conn, "olympic-paddington")
+    started = conn.execute("SELECT started_at FROM runs").fetchone()[0]
+    assert api.next_collection_at(conn, started + 60) == started + 3 * 3600  # 3 hours after the last start
+    monkeypatch.setattr(api, "COLLECT_EVERY_HOURS", 0)
+    assert api.next_collection_at(conn, started) is None                   # off
+
+
+def test_proxy_settings(monkeypatch):
+    from app.collector import proxy_settings
+    for k in ("WEBSHARE_HOST", "WEBSHARE_PORT", "WEBSHARE_USERNAME", "WEBSHARE_PASSWORD", "WEBSHARE_COUNTRY", "DISABLE_PROXY"):
+        monkeypatch.delenv(k, raising=False)
+    assert proxy_settings("a") is None                                       # not configured: direct
+    monkeypatch.setenv("WEBSHARE_HOST", "p.webshare.io"); monkeypatch.setenv("WEBSHARE_PORT", "80")
+    monkeypatch.setenv("WEBSHARE_USERNAME", "abc-rotate"); monkeypatch.setenv("WEBSHARE_PASSWORD", "pw")
+    p = proxy_settings("a")
+    assert p["server"] == "http://p.webshare.io:80" and p["password"] == "pw"
+    base, country, sticky = p["username"].split("-")
+    assert (base, country) == ("abc", "au") and sticky.isdigit()          # numeric sticky session
+    assert proxy_settings("a") == p and proxy_settings("b") != p             # same session, same IP
+    monkeypatch.setenv("DISABLE_PROXY", "true")
+    assert proxy_settings("a") is None

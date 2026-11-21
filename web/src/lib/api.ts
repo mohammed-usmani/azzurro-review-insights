@@ -60,6 +60,7 @@ export interface Briefing {
 export interface Health {
   status: "ok" | "stale" | "failing"; reviews: number; with_text: number; analysed: number; llm_enabled: boolean;
   stale_after_hours: number;
+  schedule: { every_hours: number | null; next_at: number | null; running: boolean };
   properties: {
     property: string; name: string; status: "ok" | "stale" | "failing"; stored_reviews: number;
     reported_reviews: number | null; last_collected_at: number | null; hours_since_collection: number | null;

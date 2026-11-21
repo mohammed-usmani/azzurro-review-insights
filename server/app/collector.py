@@ -14,7 +14,9 @@ it already has. --full walks every page (first run / backfill).
 """
 import argparse
 import asyncio
+import hashlib
 import logging
+import os
 import random
 import sys
 import time
@@ -116,6 +118,26 @@ async def collect_property(page: Page, conn, prop: str, run_id: int, full: bool,
     return seen, new
 
 
+def proxy_settings(session: str) -> dict | None:
+    """Webshare residential proxy from WEBSHARE_HOST/PORT/USERNAME/PASSWORD, or None to connect directly.
+
+    Booking.com blocks most datacenter IPs, so a hosted server needs a residential IP. The username
+    is "<base>-<country>-<number>": a numeric session keeps the same IP for the whole property walk
+    (Webshare rejects non-numeric session ids with 407). The password is never logged.
+    """
+    if os.environ.get("DISABLE_PROXY", "").lower() == "true":
+        return None
+    host, port = os.environ.get("WEBSHARE_HOST"), os.environ.get("WEBSHARE_PORT")
+    base, password = os.environ.get("WEBSHARE_USERNAME"), os.environ.get("WEBSHARE_PASSWORD")
+    if not (host and port and base and password):
+        return None
+    base = base.removesuffix("-rotate")
+    country = os.environ.get("WEBSHARE_COUNTRY", "au").strip().lower()
+    sticky = str(int(hashlib.sha256(session.encode()).hexdigest()[:8], 16))
+    username = "-".join(x for x in (base, country, sticky) if x)
+    return {"server": f"http://{host}:{port}", "username": username, "password": password}
+
+
 RETRY_WAIT_S = (10, 60)  # between attempts: transient 5xx errors usually clear within a minute
 
 
@@ -126,11 +148,16 @@ async def run(props: list[str], full: bool, max_pages: int, attempts: int = 3) -
     failures = 0
     async with async_playwright() as p:
         # Headed on purpose: Booking.com refuses headless browsers, and we don't disguise one.
+        # On a server without a screen, run under a virtual display (xvfb-run; the Docker image does).
         browser = await p.chromium.launch(headless=False)
         for prop in props:
             run_id = db.start_run(conn, prop)
             for attempt in range(1, attempts + 1):
-                context = await browser.new_context(locale="en-GB", viewport={"width": 1400, "height": 900})
+                # a new residential IP per attempt, the same IP for every page of one attempt
+                proxy = proxy_settings(f"{prop}-{run_id}-{attempt}")
+                log.info("%s: connecting %s", prop, f"through proxy as {proxy['username']}" if proxy else "directly")
+                context = await browser.new_context(locale="en-GB", viewport={"width": 1400, "height": 900},
+                                                    timezone_id="Australia/Sydney", proxy=proxy)
                 page = await context.new_page()
                 try:
                     seen, new = await collect_property(page, conn, prop, run_id, full, max_pages)

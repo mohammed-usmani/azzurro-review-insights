@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, ApiError, type Coverage, type Run } from "@/lib/api";
-import { ago, language, plural, SHORT_NAMES } from "@/lib/format";
+import { ago, language, plural, SHORT_NAMES, until } from "@/lib/format";
 import { useHealth } from "@/lib/queries";
 import { Page } from "./PageHeader";
 import { ErrorNote, Panel, PanelHeader, Skeleton } from "./ui";
@@ -42,6 +42,12 @@ function StatusBanner({ health }: { health: NonNullable<ReturnType<typeof useHea
       <p className="mt-0.5 text-sm text-ink">{next}</p>
       <p className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-[13px] text-muted">
         <span>Last collected {ago(latest || null)}</span>
+        <span>
+          {health.schedule.running ? "Collecting now"
+            : health.schedule.every_hours && health.schedule.next_at
+              ? `Collects automatically every ${health.schedule.every_hours} hours, next ${until(health.schedule.next_at)}`
+              : "Automatic collection is off"}
+        </span>
         <span>{health.reviews.toLocaleString("en-AU")} reviews stored</span>
         <span>{health.with_text.toLocaleString("en-AU")} with written text</span>
         <span>{rejected ? `${rejected} rejected by validation` : "None rejected by validation"}</span>
@@ -84,7 +90,7 @@ export function HealthPage() {
             {running ? "Collecting…" : collect.isPending ? "Starting…" : "Collect new reviews now"}
           </button>
           <p className="text-xs text-muted" aria-live="polite">
-            {collect.isError ? (collect.error as Error).message : collect.isSuccess && !running ? "Started. Progress appears below." : "Opens a browser window on the server machine."}
+            {collect.isError ? (collect.error as Error).message : collect.isSuccess && !running ? "Started. Progress appears below." : "Also runs automatically. Opens a browser window on the server machine."}
           </p>
         </div>
       </header>
