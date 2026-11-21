@@ -86,7 +86,7 @@ export function HealthPage() {
         </div>
         <div className="flex flex-col items-end gap-1">
           <button onClick={() => collect.mutate()} disabled={collect.isPending || running}
-            className="rounded-lg bg-ink px-3.5 py-2.5 text-sm font-semibold text-surface hover:opacity-90 disabled:opacity-50">
+            className="rounded-lg bg-btn px-3.5 py-2.5 text-sm font-semibold text-btn-ink hover:opacity-90 disabled:opacity-50">
             {running ? "Collecting…" : collect.isPending ? "Starting…" : "Collect new reviews now"}
           </button>
           <p className="text-xs text-muted" aria-live="polite">

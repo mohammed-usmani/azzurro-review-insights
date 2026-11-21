@@ -3,7 +3,7 @@ import { band } from "@/lib/format";
 
 export function Panel({ className = "", children, ...rest }: React.HTMLAttributes<HTMLElement> & { as?: "section" | "article" | "div" }) {
   return (
-    <section className={`min-w-0 rounded-xl border border-line bg-surface ${className}`} {...rest}>
+    <section className={`min-w-0 rounded-xl border border-line bg-surface shadow-[var(--panel-shadow)] ${className}`} {...rest}>
       {children}
     </section>
   );
@@ -66,7 +66,7 @@ export function Empty({ children }: { children: React.ReactNode }) {
   return <p className="px-5 py-8 text-center text-sm text-muted">{children}</p>;
 }
 
-const CHIP = { pos: "bg-pos-soft text-pos-ink", mix: "bg-mix-soft text-mix-ink", neg: "bg-neg-soft text-neg-ink" };
+const CHIP = { pos: "bg-chip-pos text-chip-pos-ink", mix: "bg-chip-mix text-chip-mix-ink", neg: "bg-chip-neg text-chip-neg-ink" };
 
 /** Booking.com score; colour follows the positive (8–10) / mixed / negative (6 or below) bands. */
 export function ScoreChip({ value, large = false }: { value: number; large?: boolean }) {

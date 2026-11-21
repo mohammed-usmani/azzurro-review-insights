@@ -58,6 +58,9 @@ export function Reviews() {
   const wide = useWide();
   const openDialog = useOpenReview();
   const counts = useCounts({ ...params, has_text: !s.scoreOnly }, ready);
+  const written = useCounts({ ...params, has_text: true }, ready);
+  const everything = useCounts({ ...params, has_text: false }, ready);
+  const scoreOnlyCount = written.data && everything.data ? everything.data.all - written.data.all : null;
   const [search, setSearch] = useState(s.q);
 
   useEffect(() => {
@@ -159,7 +162,7 @@ export function Reviews() {
                 <span aria-live="polite">{list.data ? plural(total, "review") : "Loading reviews"}</span>
                 <label className="flex items-center gap-1.5">
                   <input type="checkbox" checked={s.scoreOnly} onChange={(e) => s.set({ all: e.target.checked ? "1" : undefined, ...reset })} />
-                  Include score-only reviews
+                  {scoreOnlyCount == null ? "Also show reviews with only a score" : `Also show ${plural(scoreOnlyCount, "review")} with only a score`}
                 </label>
               </div>
               {list.isPending ? <Skeleton lines={8} className="p-4" /> : list.isError ? <ErrorNote error={list.error} retry={list.refetch} /> : items.length === 0 ? (
@@ -212,7 +215,7 @@ function ListItem({ review: r, current, onPick }: { review: Review; current: boo
           <span className="mt-0.5 flex flex-wrap gap-x-2.5 text-xs text-muted">
             <span>{SHORT_NAMES[r.property]}</span>
             {r.urgent && <span className="font-semibold text-urgent">Urgent</span>}
-            {r.sentiment === "negative" && !r.partner_reply && <span className="font-medium text-warn">No reply yet</span>}
+            {r.sentiment === "negative" && !r.partner_reply && (title || disliked || liked) && <span className="font-medium text-warn">No reply yet</span>}
             {r.partner_reply && <span>Replied</span>}
             {translated && <span>Translated</span>}
           </span>

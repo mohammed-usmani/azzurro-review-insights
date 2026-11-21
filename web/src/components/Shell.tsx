@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import { useFilters, useLinkTo } from "@/lib/filters";
 import { PROPERTIES, SHORT_NAMES, ago, score } from "@/lib/format";
 import { useAllOverview, useCounts, useHealth, useParams } from "@/lib/queries";
@@ -55,12 +56,14 @@ function Sidebar() {
   const props = [{ slug: "", name: "All four properties" }, ...PROPERTIES.map((p) => ({ slug: p.slug, name: SHORT_NAMES[p.slug] }))];
 
   return (
-    <nav aria-label="Main" className="flex flex-col gap-4 bg-nav px-3 py-3 text-white lg:sticky lg:top-0 lg:h-screen lg:w-60 lg:flex-none lg:gap-7 lg:overflow-y-auto lg:px-3.5 lg:py-5">
+    <nav aria-label="Main" className="flex flex-col gap-4 border-nav-line bg-nav px-3 py-3 text-white lg:border-r lg:sticky lg:top-0 lg:h-screen lg:w-60 lg:flex-none lg:gap-7 lg:overflow-y-auto lg:px-3.5 lg:py-5">
       <div className="flex items-center justify-between gap-3 px-3">
         <Link href={linkTo("/")} className="leading-tight">
           <span className="block text-base font-bold tracking-tight">Azzurro</span>
           <span className="block text-[13px] text-nav-muted">Guest reviews</span>
         </Link>
+        <div className="flex items-center gap-2">
+        <ThemeToggle />
         <label className="lg:hidden">
           <span className="sr-only">Property</span>
           <select
@@ -71,6 +74,7 @@ function Sidebar() {
             {props.map((p) => <option key={p.slug} value={p.slug} className="text-ink">{p.name}</option>)}
           </select>
         </label>
+        </div>
       </div>
 
       <ul className="flex gap-0.5 overflow-x-auto lg:flex-col">
@@ -123,6 +127,36 @@ function Sidebar() {
 
       {health.data && <HealthFooter health={health.data} />}
     </nav>
+  );
+}
+
+function ThemeToggle() {
+  const [theme, setTheme] = useState<"light" | "dark" | null>(null);
+  useEffect(() => setTheme(document.documentElement.dataset.theme === "dark" ? "dark" : "light"), []);
+  if (!theme) return <span className="size-9" />;
+  const next = theme === "dark" ? "light" : "dark";
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        document.documentElement.dataset.theme = next;
+        try { localStorage.setItem("theme", next); } catch {}
+        setTheme(next);
+      }}
+      aria-label={`Switch to ${next} theme`}
+      title={`Switch to ${next} theme`}
+      className="grid size-9 place-items-center rounded-lg text-nav-muted hover:bg-white/10 hover:text-white"
+    >
+      {theme === "dark" ? (
+        <svg viewBox="0 0 24 24" className="size-[18px]" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden>
+          <circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
+        </svg>
+      ) : (
+        <svg viewBox="0 0 24 24" className="size-[18px]" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z" />
+        </svg>
+      )}
+    </button>
   );
 }
 

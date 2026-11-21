@@ -60,6 +60,7 @@ const DOT = (polarity: string, severity: number) =>
 /** Everything about one review: urgent reason, stay, translation, what it mentions and the hotel's reply. */
 export function ReviewDetail({ review: r }: { review: Review }) {
   const translated = Boolean(r.positive_en || r.negative_en || r.title_en);
+  const hasText = Boolean(r.title || r.positive || r.negative);
   const [original, setOriginal] = useState(false);
   useEffect(() => setOriginal(false), [r.id]);
   const show = (orig: string | null, en: string | null) => (original || !translated ? orig : en ?? orig);
@@ -115,20 +116,20 @@ export function ReviewDetail({ review: r }: { review: Review }) {
         </div>
       )}
 
-      <div className="flex flex-wrap items-center gap-3 border-t border-line-soft pt-4">
+      {(hasText || r.partner_reply) && <div className="flex flex-wrap items-center gap-3 border-t border-line-soft pt-4">
         <div className="min-w-0 flex-[1_1_240px]">
           <p className="mb-1.5 text-xs font-semibold text-muted">Hotel reply</p>
           {r.partner_reply
             ? <p className="whitespace-pre-line text-sm">{r.partner_reply}</p>
             : <p className="text-sm text-warn">{r.sentiment === "negative" ? "No reply yet." : "No reply. Not needed for a positive review, but it helps."}</p>}
         </div>
-        {!r.partner_reply && (
+        {!r.partner_reply && hasText && (
           <a href="https://admin.booking.com/" target="_blank" rel="noreferrer"
-            className="rounded-lg bg-ink px-3.5 py-2.5 text-sm font-semibold text-surface hover:opacity-90">
+            className="rounded-lg bg-btn px-3.5 py-2.5 text-sm font-semibold text-btn-ink hover:opacity-90">
             Reply on Booking.com<span className="sr-only"> (opens the Booking.com extranet in a new tab)</span>
           </a>
         )}
-      </div>
+      </div>}
     </article>
   );
 }

@@ -39,45 +39,69 @@
   --heat-ink-0: #6b7a82;
   --heat-ink: #3a1209;
   --heat-ink-4: #ffffff;
+  --raised: #ffffff;
+  --nav-line: transparent;
+  --panel-shadow: none;
+  --btn: #14212b;
+  --btn-ink: #ffffff;
+  --chip-pos: #dff0f2;
+  --chip-pos-ink: #1b5d69;
+  --chip-mix: #fbefd6;
+  --chip-mix-ink: #77510c;
+  --chip-neg: #fbe7e2;
+  --chip-neg-ink: #9b2f1d;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --paper: #0d161c;
-    --surface: #142029;
-    --ink: #e6edf0;
-    --muted: #9aaab2;
-    --faint: #6f8089;
-    --line: #26363f;
-    --line-soft: #1d2b33;
-    --seg: #1d2b33;
-    --nav: #0a1217;
-    --accent: #a58af0;
-    --accent-soft: #221b38;
-    --accent-line: #352a57;
-    --urgent: #f97066;
-    --urgent-soft: #3a1714;
-    --urgent-ink: #ffb4ab;
-    --warn: #f5b14c;
-    --good: #47b886;
-    --pos: #4fb3c4;
-    --pos-soft: #133238;
-    --pos-ink: #8fd6e2;
-    --mix: #e0b45a;
-    --mix-soft: #362a12;
-    --mix-ink: #f0cf8a;
-    --neg: #ec7a63;
-    --neg-soft: #3a1c15;
-    --neg-ink: #f5a896;
-    --heat-0: #1a2730;
-    --heat-1: #3a1f18;
-    --heat-2: #5c2a1e;
-    --heat-3: #8a3a28;
-    --heat-4: #c0503a;
-    --heat-ink-0: #8a979e;
-    --heat-ink: #f6d9d1;
-    --heat-ink-4: #ffffff;
-  }
+:root[data-theme="dark"] {
+  /* Graphite: depth from lightness steps, not tint. One accent (violet), used sparingly. */
+  color-scheme: dark;
+  --paper: #0e1012;
+  --surface: #16191c;
+  --raised: #24282d;
+  --ink: #ececee;
+  --muted: #8b9096;
+  --faint: #5f656b;
+  --line: #262a2e;
+  --line-soft: #1f2226;
+  --seg: #0e1012;
+  --nav: #0e1012;
+  --nav-line: #1f2226;
+  --nav-ink: #a9aeb4;
+  --nav-muted: #7a8087;
+  --panel-shadow: inset 0 1px 0 rgb(255 255 255 / 0.03), 0 1px 2px rgb(0 0 0 / 0.3);
+  --btn: #a48bf5;
+  --btn-ink: #140b2e;
+  --accent: #b39ef7;
+  --accent-soft: #1d1a2a;
+  --accent-line: #2f2950;
+  --urgent: #ff6b5e;
+  --urgent-soft: #3a1513;
+  --urgent-ink: #ff8f84;
+  --warn: #c9a35e;
+  --good: #3ccf9e;
+  --pos: #3ccf9e;
+  --pos-soft: #13261f;
+  --pos-ink: #6fdcb9;
+  --mix: #e8b44f;
+  --mix-soft: #2a2213;
+  --mix-ink: #f0c96f;
+  --neg: #f0705a;
+  --neg-soft: #2e1916;
+  --neg-ink: #ff9a85;
+  --chip-pos: #3ccf9e;
+  --chip-pos-ink: #04190f;
+  --chip-mix: #e8b44f;
+  --chip-mix-ink: #1f1503;
+  --chip-neg: #f0705a;
+  --chip-neg-ink: #1c0b07;
+  --heat-0: #1a1d20;
+  --heat-1: #2c1b19;
+  --heat-2: #4d2620;
+  --heat-3: #85372a;
+  --heat-4: #e0583f;
+  --heat-ink-0: #7a8087;
+  --heat-ink: #ffd9d0;
+  --heat-ink-4: #ffffff;
 }
 
 @theme inline {
@@ -109,6 +133,16 @@
   --color-neg: var(--neg);
   --color-neg-soft: var(--neg-soft);
   --color-neg-ink: var(--neg-ink);
+  --color-raised: var(--raised);
+  --color-nav-line: var(--nav-line);
+  --color-btn: var(--btn);
+  --color-btn-ink: var(--btn-ink);
+  --color-chip-pos: var(--chip-pos);
+  --color-chip-pos-ink: var(--chip-pos-ink);
+  --color-chip-mix: var(--chip-mix);
+  --color-chip-mix-ink: var(--chip-mix-ink);
+  --color-chip-neg: var(--chip-neg);
+  --color-chip-neg-ink: var(--chip-neg-ink);
   --font-sans: var(--font-schibsted);
 }
 
@@ -125,6 +159,9 @@ body {
 
 dialog::backdrop {
   background: rgb(10 20 26 / 0.45);
+}
+:root[data-theme="dark"] dialog::backdrop {
+  background: rgb(0 0 0 / 0.6);
 }
 
 @media (prefers-reduced-motion: reduce) {

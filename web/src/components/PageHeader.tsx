@@ -42,7 +42,7 @@ export function PageHeader({ title, compare = false, extra }: { title: string; c
               key={o.value}
               aria-pressed={filters.preset === o.value}
               onClick={() => update({ preset: o.value })}
-              className={`whitespace-nowrap rounded-[7px] px-3 py-1.5 text-[13px] ${filters.preset === o.value ? "bg-surface font-semibold text-ink shadow-[0_1px_2px_rgb(20_33_43/0.12)]" : "text-muted hover:text-ink"}`}
+              className={`whitespace-nowrap rounded-[7px] px-3 py-1.5 text-[13px] ${filters.preset === o.value ? "bg-raised font-semibold text-ink shadow-[0_1px_2px_rgb(20_33_43/0.12)]" : "text-muted hover:text-ink"}`}
             >
               {o.label}
             </button>

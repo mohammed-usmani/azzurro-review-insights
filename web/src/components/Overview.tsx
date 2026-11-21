@@ -299,8 +299,27 @@ function TrendPanel() {
   );
 }
 
+const PERIOD_NAMES: Record<string, [string, string]> = {
+  "this-week": ["This week", "Last week"],
+  "last-week": ["Last week", "The week before"],
+};
+
+/** "▲ from 14%": more complaints is bad, so up is red and down is green. */
+function ShareChange({ now, before }: { now: number; before: number | null }) {
+  if (before == null) return null;
+  const [n, b] = [Math.round(now), Math.round(before)];
+  if (n === b) return <span className="text-faint">same as before</span>;
+  return (
+    <span className={n > b ? "text-neg-ink" : "text-pos-ink"}>
+      <span aria-hidden>{n > b ? "▲" : "▼"}</span>
+      <span className="sr-only">{n > b ? "up" : "down"}</span> from {b}%
+    </span>
+  );
+}
+
 function TopicBars() {
-  const { params, ready } = useParams();
+  const { params, ready, filters } = useParams();
+  const [nowName, beforeName] = PERIOD_NAMES[filters.preset] ?? ["This period", "Period before"];
   const linkTo = useLinkTo();
   const q = useTopics(params, ready);
   const rows = [...(q.data?.topics ?? [])].sort((a, b) => (b.share_of_negative_reviews ?? 0) - (a.share_of_negative_reviews ?? 0));
@@ -314,9 +333,13 @@ function TopicBars() {
         <Empty>No negative reviews in this period.</Empty>
       ) : (
         <>
-          <p className="px-4 pb-3 text-[12.5px] text-muted sm:px-5">
-            Share of the {plural(q.data.negative_reviews, "negative review")} in this period. The tick shows the period before.
-          </p>
+          <div className="px-4 pb-3 text-[12.5px] text-muted sm:px-5">
+            <p>Share of the {plural(q.data.negative_reviews, "negative review")} that mention each topic.</p>
+            <p className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1" aria-hidden>
+              <span className="inline-flex items-center gap-1.5"><span className="h-2 w-5 rounded-full bg-neg" />{nowName}</span>
+              <span className="inline-flex items-center gap-1.5"><span className="h-3.5 w-0.5 rounded-sm bg-ink" />{beforeName}</span>
+            </p>
+          </div>
           <ul className="space-y-1 px-2 pb-3 sm:px-3">
             {rows.map((t: TopicStat) => (
               <li key={t.topic}>
@@ -329,9 +352,12 @@ function TopicBars() {
                         title={`Before: ${Math.round(t.previous.share_of_negative_reviews)}%`} />
                     )}
                   </span>
-                  <span className="min-w-[84px] whitespace-nowrap text-right">
+                  <span className="min-w-[96px] whitespace-nowrap text-right leading-tight">
                     <strong className="font-semibold">{Math.round(t.share_of_negative_reviews ?? 0)}%</strong>{" "}
                     <span className="text-[12.5px] text-muted">{t.negative_reviews_mentioning} of {q.data.negative_reviews}</span>
+                    <span className="block text-[12px]">
+                      <ShareChange now={t.share_of_negative_reviews ?? 0} before={t.previous.share_of_negative_reviews} />
+                    </span>
                   </span>
                 </Link>
               </li>

@@ -139,7 +139,7 @@ function Heatmap() {
                         <td key={c.slug} className="p-0">
                           <Link href={href(c.slug, t.topic)} style={{ background: h.bg, color: h.fg }}
                             aria-label={`${TOPIC_LABEL[t.topic]}, ${name}: ${p}% of negative reviews, ${n} ${n === 1 ? "review" : "reviews"}`}
-                            className={`flex h-[46px] min-w-[72px] flex-col items-center justify-center rounded-[7px] text-sm hover:outline-2 hover:outline-ink ${c.slug === "" ? "ring-[1.5px] ring-ink ring-inset" : ""}`}>
+                            className={`flex h-[46px] min-w-[72px] flex-col items-center justify-center rounded-[7px] text-sm hover:outline-2 hover:outline-ink ${c.slug === "" ? "ring-[1.5px] ring-ink/60 ring-inset" : ""}`}>
                             <span className="font-semibold">{p}%</span>
                             {n > 0 && <span className="text-[11px] opacity-80">{n}</span>}
                           </Link>
