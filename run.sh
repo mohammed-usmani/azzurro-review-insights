@@ -11,7 +11,7 @@ command -v npm >/dev/null || { echo "Needs Node.js 20 or newer: https://nodejs.o
   cd server
   uv sync --quiet
   if [ ! -f data/reviews.db ]; then
-    echo "Loading sample data (3,124 reviews collected from Booking.com)..."
+    echo "Loading sample data (3,126 reviews collected from Booking.com)..."
     uv run python -m app.db load-sample
   fi
 )

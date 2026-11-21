@@ -16,7 +16,33 @@ web/      Next.js dashboard (reads the API through a /api proxy)
 run.sh    starts both
 ```
 
-![Dashboard](docs/dashboard.png)
+## Demo video
+
+[![Demo video: a walkthrough of every page](docs/screenshots/overview-light.png)](https://drive.google.com/file/d/1nC342jk3RjpgVRThkcPuagQRxwYHVbYL/view?usp=sharing)
+
+**[Watch the demo on Google Drive](https://drive.google.com/file/d/1nC342jk3RjpgVRThkcPuagQRxwYHVbYL/view?usp=sharing)**: a walkthrough of every page, with captions.
+
+## Screenshots
+
+**Overview.** The AI summary first, then the key numbers, each property worst first, and what needs attention today.
+
+![Overview](docs/screenshots/overview-light.png)
+
+**Reviews.** Quick filters with counts, and a reading pane with the translation, the problems the AI found and a link to reply.
+
+![Reviews](docs/screenshots/reviews.png)
+
+**Topics and problems.** Which topic hurts which property, and the most common specific problems, each linked to its reviews.
+
+![Topics and problems](docs/screenshots/topics.png)
+
+**Data health.** Whether the numbers can be trusted: collection status per property, the run log, and AI and language coverage.
+
+![Data health](docs/screenshots/health.png)
+
+**Dark theme.** Follows the computer's setting, with a switch in the sidebar.
+
+![Overview, dark theme](docs/screenshots/overview-dark.png)
 
 ## Quick start
 
@@ -26,7 +52,7 @@ Needs [uv](https://docs.astral.sh/uv/getting-started/installation/) and Node.js 
 ./run.sh          # installs, loads the sample data on first run, starts the API and the dashboard
 ```
 
-Open **http://localhost:3000**. It works straight away on the committed sample data (3,124 reviews
+Open **http://localhost:3000**. It works straight away on the committed sample data (3,126 reviews
 collected from Booking.com), including the AI results. **No API key and no scraping are needed to try it.**
 
 ## What's on the dashboard
@@ -163,7 +189,7 @@ Both routes use the same models, prompts and embeddings, so stored results stay 
    pre-generates this week's briefings (all properties, plus each one) after every run.
 
 **Request path vs background work:**
-- No user request waits on an LLM. Every endpoint answers in under 60 ms on the 3,124-review sample.
+- No user request waits on an LLM. Every endpoint answers in under 60 ms on the 3,126-review sample.
 - After each collection, `python -m app.llm process` runs: analyse new reviews → embed and group new
   phrases → merge or name new groups → refresh the briefings. On a normal day that's a few reviews
   and seconds of work.
@@ -299,7 +325,7 @@ To reproduce: `cd server && uv run python -m eval.evaluate score` (labels in `se
 
 ## Sample data
 
-`server/data/sample_reviews.json` is a real collection run (3,124 reviews, with personal data removed).
+`server/data/sample_reviews.json` is a real collection run (3,126 reviews, with personal data removed).
 Three properties hit the default 100-page cap, so only their newest 1,000 reviews are included;
 raise it with `--max-pages`.
 Load it with `uv run python -m app.db load-sample`. Regenerate it with
